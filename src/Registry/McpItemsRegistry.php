@@ -8,22 +8,15 @@ use Butschster\ContextGenerator\McpServer\Attribute\Prompt;
 use Butschster\ContextGenerator\McpServer\Attribute\Resource;
 use Butschster\ContextGenerator\McpServer\Attribute\Tool;
 use Butschster\ContextGenerator\McpServer\Tool\ToolAttributesParser;
+use Mcp\Server\Contracts\ReferenceRegistryInterface;
 use Psr\Log\LoggerInterface;
 
-final class McpItemsRegistry
+final readonly class McpItemsRegistry
 {
-    /** @var array<\Mcp\Types\Prompt> */
-    private array $prompts = [];
-
-    /** @var array<\Mcp\Types\Resource> */
-    private array $resources = [];
-
-    /** @var array<\Mcp\Types\Tool> */
-    private array $tools = [];
-
     public function __construct(
-        private readonly ToolAttributesParser $toolAttributesParser,
-        private readonly LoggerInterface $logger,
+        private ReferenceRegistryInterface $registry,
+        private ToolAttributesParser $toolAttributesParser,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -37,10 +30,13 @@ final class McpItemsRegistry
         $promptAttributes = $reflection->getAttributes(Prompt::class);
         if (!empty($promptAttributes)) {
             $prompt = $promptAttributes[0]->newInstance();
-            $this->prompts[$prompt->name] = new \Mcp\Types\Prompt(
+
+            $schema = new \PhpMcp\Schema\Prompt(
                 name: $prompt->name,
                 description: $prompt->description,
             );
+
+            $this->registry->registerPrompt($schema, new NullHandler());
 
             $this->logger->info('Registered prompt', [
                 'name' => $prompt->name,
@@ -52,11 +48,15 @@ final class McpItemsRegistry
         $resourceAttributes = $reflection->getAttributes(Resource::class);
         if (!empty($resourceAttributes)) {
             $resource = $resourceAttributes[0]->newInstance();
-            $this->resources[$resource->name] = new \Mcp\Types\Resource(
-                name: $resource->name,
-                uri: $resource->uri,
-                description: $resource->description,
-                mimeType: $resource->mimeType,
+
+            $this->registry->registerResource(
+                new \PhpMcp\Schema\Resource(
+                    uri: $resource->uri,
+                    name: $resource->name,
+                    description: $resource->description,
+                    mimeType: $resource->mimeType,
+                ),
+                new NullHandler(),
             );
 
             $this->logger->info('Registered resource', [
@@ -71,7 +71,11 @@ final class McpItemsRegistry
         $toolAttributes = $reflection->getAttributes(Tool::class);
         if (!empty($toolAttributes)) {
             $tool = $toolAttributes[0]->newInstance();
-            $this->tools[$tool->name] = $this->toolAttributesParser->parse($className);
+
+            $this->registry->registerTool(
+                $this->toolAttributesParser->parse($className),
+                new NullHandler(),
+            );
 
             $this->logger->info('Registered tool', [
                 'name' => $tool->name,
@@ -88,30 +92,5 @@ final class McpItemsRegistry
         foreach ($classNames as $className) {
             $this->register($className);
         }
-    }
-
-    /**
-     * Get all registered prompts
-     */
-    public function getPrompts(): array
-    {
-        return \array_values($this->prompts);
-    }
-
-    /**
-     * Get all registered resources
-     */
-    public function getResources(): array
-    {
-        return \array_values($this->resources);
-    }
-
-    /**
-     * Get all registered tools
-     * @return array<\Mcp\Types\Tool>
-     */
-    public function getTools(): array
-    {
-        return \array_values($this->tools);
     }
 }

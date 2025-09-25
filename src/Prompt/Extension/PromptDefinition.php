@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Butschster\ContextGenerator\McpServer\Prompt\Extension;
 
 use Butschster\ContextGenerator\McpServer\Prompt\PromptType;
-use Mcp\Types\Prompt;
-use Mcp\Types\PromptMessage;
+use PhpMcp\Schema\Content\PromptMessage;
+use PhpMcp\Schema\Prompt;
 
 final readonly class PromptDefinition implements \JsonSerializable
 {

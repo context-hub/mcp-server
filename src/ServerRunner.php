@@ -7,6 +7,7 @@ namespace Butschster\ContextGenerator\McpServer;
 use Butschster\ContextGenerator\Application\Logger\HasPrefixLoggerInterface;
 use Butschster\ContextGenerator\McpServer\Registry\McpItemsRegistry;
 use Butschster\ContextGenerator\McpServer\Routing\RouteRegistrar;
+use Mcp\Server\Contracts\ServerTransportInterface;
 use Spiral\Core\Attribute\Proxy;
 use Spiral\Core\Attribute\Singleton;
 use Spiral\Core\Scope;
@@ -44,8 +45,9 @@ final class ServerRunner implements ServerRunnerInterface
             scope: function (
                 RouteRegistrar $registrar,
                 McpItemsRegistry $registry,
-                HasPrefixLoggerInterface $logger,
                 ExceptionReporterInterface $reporter,
+                \Mcp\Server\Server $server,
+                ServerTransportInterface $transport,
             ) use ($name): void {
                 // Register all classes with MCP item attributes. Should be before registering controllers!
                 $registry->registerMany($this->actions);
@@ -53,12 +55,11 @@ final class ServerRunner implements ServerRunnerInterface
                 // Register all controllers for routing
                 $registrar->registerControllers($this->actions);
 
-                // Create the server
-                (new Server(
-                    router: $registrar->router,
-                    logger: $logger,
-                    reporter: $reporter,
-                ))->run($name);
+                try {
+                    $server->listen($transport);
+                } catch (\Throwable $e) {
+                    $reporter->report($e);
+                }
             },
         );
     }

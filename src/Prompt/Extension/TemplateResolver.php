@@ -9,8 +9,8 @@ use Butschster\ContextGenerator\Lib\Variable\VariableReplacementProcessor;
 use Butschster\ContextGenerator\Lib\Variable\VariableResolver;
 use Butschster\ContextGenerator\McpServer\Prompt\Exception\TemplateResolutionException;
 use Butschster\ContextGenerator\McpServer\Prompt\PromptProviderInterface;
-use Mcp\Types\PromptMessage;
-use Mcp\Types\TextContent;
+use PhpMcp\Schema\Content\PromptMessage;
+use PhpMcp\Schema\Content\TextContent;
 use Psr\Log\LoggerInterface;
 use Spiral\Core\Container;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\Action;
 
-use Mcp\Types\CallToolResult;
-use Mcp\Types\TextContent;
+use PhpMcp\Schema\Content\TextContent;
+use PhpMcp\Schema\Result\CallToolResult;
 
 /**
  * Helper class to simplify creating CallToolResult instances for MCP tool actions.

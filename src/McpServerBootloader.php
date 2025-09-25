@@ -11,7 +11,6 @@ use Butschster\ContextGenerator\McpServer\Prompt\McpPromptBootloader;
 use Butschster\ContextGenerator\McpServer\Registry\McpItemsRegistry;
 use Butschster\ContextGenerator\McpServer\Routing\McpResponseStrategy;
 use Butschster\ContextGenerator\McpServer\Routing\RouteRegistrar;
-use Butschster\ContextGenerator\McpServer\SchemaMapper\SchemaMapperBootloader;
 use Butschster\ContextGenerator\McpServer\Tool\McpToolBootloader;
 use League\Route\Router;
 use League\Route\Strategy\StrategyInterface;
@@ -29,7 +28,7 @@ final class McpServerBootloader extends Bootloader
             McpPromptBootloader::class,
             McpProjectsBootloader::class,
             McpConfigBootloader::class,
-            SchemaMapperBootloader::class,
+            McpServerCoreBootloader::class,
         ];
     }
 

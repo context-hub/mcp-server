@@ -8,8 +8,8 @@ use Butschster\ContextGenerator\Lib\Variable\Provider\ConfigVariableProvider;
 use Butschster\ContextGenerator\Lib\Variable\VariableReplacementProcessor;
 use Butschster\ContextGenerator\Lib\Variable\VariableResolver;
 use Butschster\ContextGenerator\McpServer\Prompt\Extension\PromptDefinition;
-use Mcp\Types\PromptMessage;
-use Mcp\Types\TextContent;
+use PhpMcp\Schema\Content\PromptMessage;
+use PhpMcp\Schema\Content\TextContent;
 
 final readonly class PromptMessageProcessor
 {

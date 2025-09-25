@@ -9,11 +9,11 @@ use Butschster\ContextGenerator\McpServer\Prompt\Content\MessageContentLoader;
 use Butschster\ContextGenerator\McpServer\Prompt\Exception\PromptParsingException;
 use Butschster\ContextGenerator\McpServer\Prompt\Extension\PromptDefinition;
 use Butschster\ContextGenerator\McpServer\Prompt\Extension\PromptExtension;
-use Mcp\Types\Prompt;
-use Mcp\Types\PromptArgument;
-use Mcp\Types\PromptMessage;
-use Mcp\Types\Role;
-use Mcp\Types\TextContent;
+use PhpMcp\Schema\Content\PromptMessage;
+use PhpMcp\Schema\Content\TextContent;
+use PhpMcp\Schema\Enum\Role;
+use PhpMcp\Schema\Prompt;
+use PhpMcp\Schema\PromptArgument;
 
 /**
  * Factory for creating Prompt objects from configuration arrays.

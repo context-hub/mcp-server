@@ -6,9 +6,8 @@ namespace Butschster\ContextGenerator\McpServer\Tool;
 
 use Butschster\ContextGenerator\McpServer\Attribute\InputSchema;
 use Butschster\ContextGenerator\McpServer\Attribute\Tool;
-use Butschster\ContextGenerator\McpServer\SchemaMapper\SchemaMapperInterface;
-use Mcp\Types\ToolAnnotations;
-use Mcp\Types\ToolInputSchema;
+use PhpMcp\Schema\ToolAnnotations;
+use Spiral\McpServer\SchemaMapperInterface;
 
 final readonly class ToolAttributesParser
 {
@@ -18,7 +17,7 @@ final readonly class ToolAttributesParser
         private SchemaMapperInterface $schemaMapper,
     ) {}
 
-    public function parse(string $class): \Mcp\Types\Tool
+    public function parse(string $class): \PhpMcp\Schema\Tool
     {
         $reflection = new \ReflectionClass($class);
 
@@ -29,10 +28,10 @@ final readonly class ToolAttributesParser
 
         $inputSchemaClass = $reflection->getAttributes(InputSchema::class)[0] ?? null;
         if ($inputSchemaClass === null) {
-            $schema = new ToolInputSchema();
+            $schema = ['type' => 'object', 'properties' => new \stdClass()];
         } else {
             $inputSchema = $inputSchemaClass->newInstance();
-            $schema = ToolInputSchema::fromArray($this->schemaMapper->toJsonSchema($inputSchema->class));
+            $schema = $this->schemaMapper->toJsonSchema($inputSchema->class);
         }
 
         // Tool name can only contain alphanumeric characters and underscores
@@ -45,7 +44,7 @@ final readonly class ToolAttributesParser
             );
         }
 
-        return new \Mcp\Types\Tool(
+        return new \PhpMcp\Schema\Tool(
             name: $tool->name,
             inputSchema: $schema,
             description: $tool->description,
