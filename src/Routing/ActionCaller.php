@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\Routing;
 
-use Butschster\ContextGenerator\Lib\SchemaMapper\SchemaMapperInterface;
 use Butschster\ContextGenerator\McpServer\Attribute\InputSchema;
+use Butschster\ContextGenerator\McpServer\SchemaMapper\SchemaMapperInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Spiral\Core\Attribute\Proxy;
 use Spiral\Core\InvokerInterface;

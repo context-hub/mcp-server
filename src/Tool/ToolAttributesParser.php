@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\Tool;
 
-use Butschster\ContextGenerator\Lib\SchemaMapper\SchemaMapperInterface;
 use Butschster\ContextGenerator\McpServer\Attribute\InputSchema;
 use Butschster\ContextGenerator\McpServer\Attribute\Tool;
+use Butschster\ContextGenerator\McpServer\SchemaMapper\SchemaMapperInterface;
 use Mcp\Types\ToolAnnotations;
 use Mcp\Types\ToolInputSchema;
 
