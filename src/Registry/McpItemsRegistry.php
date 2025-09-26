@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Butschster\ContextGenerator\McpServer\Registry;
 
 use Butschster\ContextGenerator\McpServer\Attribute\Prompt;
-use Butschster\ContextGenerator\McpServer\Attribute\Resource;
+use Butschster\ContextGenerator\McpServer\Attribute\Resource as ResourceAttr;
 use Butschster\ContextGenerator\McpServer\Attribute\Tool;
 use Butschster\ContextGenerator\McpServer\Tool\ToolAttributesParser;
 use Mcp\Server\Contracts\ReferenceRegistryInterface;
@@ -45,12 +45,12 @@ final readonly class McpItemsRegistry
         }
 
         // Check for Resource attribute
-        $resourceAttributes = $reflection->getAttributes(Resource::class);
+        $resourceAttributes = $reflection->getAttributes(ResourceAttr::class);
         if (!empty($resourceAttributes)) {
             $resource = $resourceAttributes[0]->newInstance();
 
             $this->registry->registerResource(
-                new \PhpMcp\Schema\Resource(
+                new Resource(
                     uri: $resource->uri,
                     name: $resource->name,
                     description: $resource->description,
