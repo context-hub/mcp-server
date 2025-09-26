@@ -32,7 +32,7 @@ final readonly class ActionCaller
             $inputSchema = $inputSchemaClass->newInstance();
 
             $input = $this->schemaMapper->toObject(
-                json: (array)($request->getParsedBody() ?? []),
+                json: \json_encode((array)($request->getParsedBody() ?? [])),
                 class: $inputSchema->class,
             );
 
