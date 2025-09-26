@@ -49,11 +49,11 @@ final readonly class ToolSchema implements \JsonSerializable
     /**
      * Gets all property definitions from the schema.
      *
-     * @return array<string, array<string, mixed>> Property definitions
+     * @return array<string, array<string, mixed>>|\stdClass Property definitions
      */
-    public function getProperties(): array
+    public function getProperties(): array|\stdClass
     {
-        return $this->schema['properties'] ?? [];
+        return $this->schema['properties'] ?? new \stdClass();
     }
 
     /**
