@@ -63,24 +63,11 @@ final readonly class PromptRoute implements RouteInterface
         $request = $this->requestFactory->createPsrRequest($method, []);
 
         // Dispatch the request through the router
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            // Convert the response back to appropriate MCP type
-            return $response->getPayload();
-        } catch (\Throwable $e) {
-            $this->logger->error('Route handling error', [
-                'method' => $method,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            throw new McpServerException(
-                message: 'Failed to list prompts.',
-                previous: $e,
-            );
-        }
+        // Convert the response back to appropriate MCP type
+        return $response->getPayload();
     }
 
     /**
@@ -101,21 +88,10 @@ final readonly class PromptRoute implements RouteInterface
 
         $request = $this->requestFactory->createPsrRequest($method, $arguments);
 
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            // Convert the response back to appropriate MCP type
-            return $response->getPayload();
-        } catch (McpServerException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            $this->logger->error('Prompt get error', [
-                'prompt' => $name,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw McpServerException::promptGenerationFailed($name, $e);
-        }
+        // Convert the response back to appropriate MCP type
+        return $response->getPayload();
     }
 }

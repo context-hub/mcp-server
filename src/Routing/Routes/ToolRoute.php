@@ -10,8 +10,6 @@ use League\Route\Router;
 use Mcp\Server\Context;
 use Mcp\Server\Contracts\RouteInterface;
 use Mcp\Server\Dispatcher\RequestMethod;
-use Mcp\Server\Exception\McpServerException;
-use PhpMcp\Schema\Content\TextContent;
 use PhpMcp\Schema\JsonRpc\Notification;
 use PhpMcp\Schema\JsonRpc\Request;
 use PhpMcp\Schema\JsonRpc\Result;
@@ -62,30 +60,16 @@ final readonly class ToolRoute implements RouteInterface
         $request = $this->requestFactory->createPsrRequest($method, $params);
 
         // Dispatch the request through the router
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            return $response->getPayload();
-        } catch (\Throwable $e) {
-            $this->logger->error('Route handling error', [
-                'method' => $method,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            throw new McpServerException(
-                message: 'Failed to list tools.',
-                previous: $e,
-            );
-        }
+        return $response->getPayload();
     }
 
     private function handleToolCall(CallToolRequest $request, Context $context): CallToolResult
     {
         $method = 'tools/call/' . $request->name;
         $arguments = $request->arguments ?? [];
-        $toolName = $request->name;
 
         $this->logger->debug('Handling tool call', [
             'tool' => $request->name,
@@ -96,17 +80,9 @@ final readonly class ToolRoute implements RouteInterface
         // Create PSR request with the tool name in the path and arguments as POST body
         $request = $this->requestFactory->createPsrRequest($method, $arguments);
 
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            return $response->getPayload();
-        } catch (\Throwable $e) {
-            $this->logger->error('Tool call error', [
-                'tool' => $toolName,
-                'error' => $e->getMessage(),
-            ]);
-            return new CallToolResult([new TextContent(text: $e->getMessage())], isError: true);
-        }
+        return $response->getPayload();
     }
 }

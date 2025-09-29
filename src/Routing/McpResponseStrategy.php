@@ -22,33 +22,19 @@ final class McpResponseStrategy extends ApplicationStrategy
     #[\Override]
     public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
     {
-        try {
-            $this->logger->info('Invoking route callable', [
-                'route' => $route->getName(),
-                'method' => $request->getMethod(),
-                'uri' => (string) $request->getUri(),
-            ]);
+        $this->logger->info('Invoking route callable', [
+            'route' => $route->getName(),
+            'method' => $request->getMethod(),
+            'uri' => (string)$request->getUri(),
+        ]);
 
-            $controller = $route->getCallable($this->getContainer());
-            $response = $controller($request, $route->getVars());
+        $controller = $route->getCallable($this->getContainer());
+        $response = $controller($request, $route->getVars());
 
-            if ($response instanceof ResponseInterface) {
-                return $response;
-            }
-
-            return new JsonResponse($response);
-        } catch (\Throwable $e) {
-            $this->logger->error('Error while handling request', [
-                'exception' => $e,
-                'request' => $request,
-            ]);
-
-            $this->reporter->report($e);
-
-            return new JsonResponse([
-                'error' => 'Internal Server Error',
-                'message' => $e->getMessage(),
-            ], 500);
+        if ($response instanceof ResponseInterface) {
+            return $response;
         }
+
+        return new JsonResponse($response);
     }
 }

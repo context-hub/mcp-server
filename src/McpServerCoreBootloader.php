@@ -44,6 +44,7 @@ use Spiral\Boot\Bootloader\Bootloader;
 use Spiral\Boot\DirectoriesInterface;
 use Spiral\Boot\EnvironmentInterface;
 use Spiral\Core\FactoryInterface;
+use Spiral\Exceptions\ExceptionReporterInterface;
 use Spiral\McpServer\Bootloader\ValinorMapperBootloader;
 use Spiral\McpServer\MiddlewareManager;
 use Spiral\McpServer\MiddlewareRegistryInterface;
@@ -208,9 +209,20 @@ final class McpServerCoreBootloader extends Bootloader
     private function createProtocol(
         FactoryInterface $factory,
         LoggerInterface $logger,
+        ExceptionReporterInterface $reporter,
     ): Protocol {
         return $factory->make(Protocol::class, [
             'logger' => $logger,
+            'reporter' => new class($reporter) implements \Mcp\Server\Exception\ExceptionReporterInterface {
+                public function __construct(
+                    private readonly ExceptionReporterInterface $reporter,
+                ) {}
+
+                public function report(\Throwable $e): void
+                {
+                    $this->reporter->report($e);
+                }
+            },
         ]);
     }
 

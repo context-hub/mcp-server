@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\Routing;
 
+use Butschster\ContextGenerator\McpServer\Attribute\Guarded;
 use Butschster\ContextGenerator\McpServer\Attribute\InputSchema;
+use Mcp\Server\Authentication\Contract\UserProviderInterface;
+use Mcp\Server\Authentication\Error\InvalidTokenError;
 use Psr\Http\Message\ServerRequestInterface;
 use Spiral\Core\Attribute\Proxy;
 use Spiral\Core\InvokerInterface;
@@ -16,6 +19,7 @@ final readonly class ActionCaller
 {
     public function __construct(
         #[Proxy] private ScopeInterface $container,
+        #[Proxy] private UserProviderInterface $userProvider,
         private SchemaMapperInterface $schemaMapper,
         private string $class,
     ) {}
@@ -32,11 +36,16 @@ final readonly class ActionCaller
             $inputSchema = $inputSchemaClass->newInstance();
 
             $input = $this->schemaMapper->toObject(
-                json: \json_encode((array)($request->getParsedBody() ?? [])),
+                json: \json_encode((array)($request->getParsedBody() ?? []), \JSON_FORCE_OBJECT),
                 class: $inputSchema->class,
             );
 
             $bindings[$inputSchema->class] = $input;
+        }
+
+        $authRequired = $reflection->getAttributes(Guarded::class)[0] ?? null;
+        if ($authRequired !== null && $this->userProvider->getUser() === null) {
+            throw new InvalidTokenError();
         }
 
         return $this->container->runScope(

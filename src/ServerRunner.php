@@ -8,6 +8,7 @@ use Butschster\ContextGenerator\Application\Logger\HasPrefixLoggerInterface;
 use Butschster\ContextGenerator\McpServer\Registry\McpItemsRegistry;
 use Butschster\ContextGenerator\McpServer\Routing\RouteRegistrar;
 use Mcp\Server\Contracts\ServerTransportInterface;
+use Mcp\Server\Server;
 use Spiral\Core\Attribute\Proxy;
 use Spiral\Core\Attribute\Singleton;
 use Spiral\Core\Scope;
@@ -46,7 +47,7 @@ final class ServerRunner implements ServerRunnerInterface
                 RouteRegistrar $registrar,
                 McpItemsRegistry $registry,
                 ExceptionReporterInterface $reporter,
-                \Mcp\Server\Server $server,
+                Server $server,
                 ServerTransportInterface $transport,
             ) use ($name): void {
                 // Register all classes with MCP item attributes. Should be before registering controllers!

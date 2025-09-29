@@ -87,23 +87,10 @@ final readonly class ResourceRoute implements RouteInterface
         $request = $this->requestFactory->createPsrRequest($method, $params);
 
         // Dispatch the request through the router
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            return $response->getPayload();
-        } catch (\Throwable $e) {
-            $this->logger->error('Route handling error', [
-                'method' => $method,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            throw new McpServerException(
-                message: 'Failed to list resources.',
-                previous: $e,
-            );
-        }
+        return $response->getPayload();
     }
 
     private function handleResourceTemplateList(ListResourceTemplatesRequest $request): ListResourceTemplatesResult
@@ -117,23 +104,10 @@ final readonly class ResourceRoute implements RouteInterface
         $request = $this->requestFactory->createPsrRequest($method, $params);
 
         // Dispatch the request through the router
-        try {
-            $response = $this->router->dispatch($request);
-            \assert($response instanceof JsonResponse);
+        $response = $this->router->dispatch($request);
+        \assert($response instanceof JsonResponse);
 
-            return $response->getPayload();
-        } catch (\Throwable $e) {
-            $this->logger->error('Route handling error', [
-                'method' => $method,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            throw new McpServerException(
-                message: 'Failed to list resources.',
-                previous: $e,
-            );
-        }
+        return $response->getPayload();
     }
 
     /**
@@ -165,15 +139,6 @@ final readonly class ResourceRoute implements RouteInterface
         } catch (\JsonException $e) {
             $this->logger->warning('Failed to JSON encode resource content.', ['exception' => $e, 'uri' => $uri]);
             throw McpServerException::internalError("Failed to serialize resource content for '{$uri}'.", $e);
-        } catch (McpServerException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            $this->logger->error('Resource read error', [
-                'resource' => $uri,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw McpServerException::resourceReadFailed($uri, $e);
         }
     }
 
