@@ -251,7 +251,6 @@ final class McpServerCoreBootloader extends Bootloader
     private function createTransport(
         ContainerInterface $container,
         EnvironmentInterface $env,
-        LoopInterface $loop,
         SessionIdGeneratorInterface $sessionIdGenerator,
         LoggerInterface $logger,
     ): ServerTransportInterface {

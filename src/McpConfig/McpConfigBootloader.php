@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\McpConfig;
 
+use Butschster\ContextGenerator\McpServer\McpConfig\Client\ClaudeDesktopClientStrategy;
+use Butschster\ContextGenerator\McpServer\McpConfig\Client\ClientStrategyRegistry;
+use Butschster\ContextGenerator\McpServer\McpConfig\Client\CodexClientStrategy;
+use Butschster\ContextGenerator\McpServer\McpConfig\Client\CursorClientStrategy;
+use Butschster\ContextGenerator\McpServer\McpConfig\Client\GenericClientStrategy;
 use Butschster\ContextGenerator\McpServer\McpConfig\Generator\McpConfigGenerator;
 use Butschster\ContextGenerator\McpServer\McpConfig\Service\OsDetectionService;
 use Butschster\ContextGenerator\McpServer\McpConfig\Template\ConfigTemplateInterface;
@@ -19,13 +24,21 @@ final class McpConfigBootloader extends Bootloader
     public function defineSingletons(): array
     {
         return [
+            ClientStrategyRegistry::class => static fn() => new ClientStrategyRegistry([
+                new ClaudeDesktopClientStrategy(),
+                new CodexClientStrategy(),
+                new CursorClientStrategy(),
+                new GenericClientStrategy(),
+            ]),
+
             OsDetectionService::class => OsDetectionService::class,
             ConfigGeneratorInterface::class => static fn(
                 LinuxConfigTemplate $linuxTemplate,
                 WindowsConfigTemplate $windowsTemplate,
                 WslConfigTemplate $wslTemplate,
                 MacOsConfigTemplate $macosTemplate,
-            ): McpConfigGenerator => new McpConfigGenerator(
+            ): McpConfigGenerator
+                => new McpConfigGenerator(
                 windowsTemplate: $windowsTemplate,
                 linuxTemplate: $linuxTemplate,
                 wslTemplate: $wslTemplate,

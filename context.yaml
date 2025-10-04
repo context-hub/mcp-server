@@ -1,0 +1,16 @@
+$schema: 'https://raw.githubusercontent.com/context-hub/generator/refs/heads/main/json-schema.json'
+
+documents:
+  - description: 'PHP Project Structure'
+    outputPath: docs/php-structure.md
+    sources:
+      - type: tree
+        sourcePaths:
+          - src
+
+  - description: MCP Config generator
+    outputPath: core/config-generator.md
+    sources:
+      - type: file
+        sourcePaths:
+          - src/McpConfig

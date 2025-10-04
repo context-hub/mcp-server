@@ -37,6 +37,19 @@ final class WslConfigTemplate extends BaseConfigTemplate
             $bashCommand .= " -c {$projectPath}";
         }
 
+        // Add SSE options if enabled
+        if (isset($options['use_sse']) && $options['use_sse']) {
+            $bashCommand .= ' --sse';
+
+            if (isset($options['sse_host'])) {
+                $bashCommand .= " --host {$options['sse_host']}";
+            }
+
+            if (isset($options['sse_port'])) {
+                $bashCommand .= " --port {$options['sse_port']}";
+            }
+        }
+
         // Handle environment variables by exporting them in the bash command
         $env = $this->getEnvironmentVariables($options);
         if (!empty($env)) {
@@ -77,10 +90,16 @@ final class WslConfigTemplate extends BaseConfigTemplate
         $metadata = [
             'os_name' => $osInfo->osName,
             'wsl_note' => 'Environment variables are exported within the bash command',
+            'use_sse' => $options['use_sse'] ?? false,
         ];
 
         if (isset($options['use_project_path']) && $options['use_project_path']) {
             $metadata['project_path'] = $projectPath;
+        }
+
+        if (isset($options['use_sse']) && $options['use_sse']) {
+            $metadata['sse_host'] = $options['sse_host'] ?? null;
+            $metadata['sse_port'] = $options['sse_port'] ?? null;
         }
 
         return new McpConfig(

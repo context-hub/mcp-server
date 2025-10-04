@@ -39,6 +39,21 @@ final class WindowsConfigTemplate extends BaseConfigTemplate
             $args[] = "-c{$windowsPath}";
         }
 
+        // Add SSE options if enabled
+        if (isset($options['use_sse']) && $options['use_sse']) {
+            $args[] = '--sse';
+
+            if (isset($options['sse_host'])) {
+                $args[] = '--host';
+                $args[] = $options['sse_host'];
+            }
+
+            if (isset($options['sse_port'])) {
+                $args[] = '--port';
+                $args[] = (string)$options['sse_port'];
+            }
+        }
+
         return $args;
     }
 
