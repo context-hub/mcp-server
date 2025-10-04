@@ -26,24 +26,6 @@ final readonly class OsInfo
         return $this->osName;
     }
 
-    public function requiresSpecialHandling(): bool
-    {
-        return $this->isWsl || $this->isWindows;
-    }
-
-    public function getShellCommand(): string
-    {
-        if ($this->isWsl) {
-            return 'bash.exe';
-        }
-
-        if ($this->isWindows) {
-            return 'ctx.exe';
-        }
-
-        return 'ctx';
-    }
-
     public function getConfigType(): string
     {
         return match (true) {
@@ -53,6 +35,16 @@ final readonly class OsInfo
             $this->isMacOs => 'macos',
             default => 'generic',
         };
+    }
+
+    public function isMacOs(): bool
+    {
+        return $this->isMacOs;
+    }
+
+    public function isLinux(): bool
+    {
+        return $this->isLinux;
     }
 
     public function isWindows(): bool

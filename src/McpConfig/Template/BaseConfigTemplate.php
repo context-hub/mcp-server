@@ -47,6 +47,9 @@ abstract class BaseConfigTemplate implements ConfigTemplateInterface
             metadata: [
                 'os_name' => $osInfo->osName,
                 'project_path' => $projectPath,
+                'use_sse' => $options['use_sse'] ?? false,
+                'sse_host' => $options['sse_host'] ?? null,
+                'sse_port' => $options['sse_port'] ?? null,
             ],
         );
     }
@@ -79,6 +82,9 @@ abstract class BaseConfigTemplate implements ConfigTemplateInterface
             metadata: [
                 'os_name' => $osInfo->osName,
                 'project_path' => $projectPath,
+                'use_sse' => $options['use_sse'] ?? false,
+                'sse_host' => $options['sse_host'] ?? null,
+                'sse_port' => $options['sse_port'] ?? null,
             ],
         );
     }

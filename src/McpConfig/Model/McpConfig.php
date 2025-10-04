@@ -25,22 +25,4 @@ final readonly class McpConfig
 
         return \json_encode($this->configData, $flags);
     }
-
-    public function getConfigForClient(): array
-    {
-        return $this->configData;
-    }
-
-    public function hasEnvironmentVariables(): bool
-    {
-        return !empty($this->env);
-    }
-
-    public function getDisplayCommand(): string
-    {
-        $command = $this->command;
-        $args = \implode(' ', $this->args);
-
-        return \trim("{$command} {$args}");
-    }
 }
