@@ -19,6 +19,18 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
 {
     private const string CLIENT_ID = 'stdio';
 
+    /**
+     * Read chunk size for LLM messages
+     * Larger chunks reduce system calls for typical LLM message sizes
+     */
+    private const int READ_CHUNK_SIZE = 1_048_576; // 1MB
+
+    /**
+     * Maximum message size from LLM clients
+     * LLMs typically don't send messages larger than 1MB
+     */
+    private const int MAX_MESSAGE_SIZE = 2_097_152; // 2MB
+
     protected string $buffer = '';
     protected bool $closing = false;
     protected bool $listening = false;
@@ -52,12 +64,41 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         $this->emit('client_connected', [self::CLIENT_ID]);
 
         while (!\feof($this->input)) {
-            $line = \fgets($this->input);
-            if (false === $line) {
+            // Read in chunks to handle large messages
+            // This solves the macOS 8KB fgets() limitation
+            $chunk = \fread($this->input, self::READ_CHUNK_SIZE);
+
+            if (false === $chunk) {
+                $this->logger->error('Failed to read from STDIN');
                 break;
             }
 
-            $this->buffer .= $line;
+            if (empty($chunk)) {
+                // No data available, continue
+                continue;
+            }
+
+            $this->buffer .= $chunk;
+
+            // Check for buffer overflow protection
+            if (\strlen($this->buffer) > self::MAX_MESSAGE_SIZE) {
+                $this->logger->error('Message size exceeded maximum allowed size', [
+                    'buffer_size' => \strlen($this->buffer),
+                    'max_size' => self::MAX_MESSAGE_SIZE,
+                ]);
+
+                // Send error and clear buffer
+                $error = Error::forInternalError(
+                    \sprintf(
+                        'Message size exceeded maximum allowed size of %d bytes',
+                        self::MAX_MESSAGE_SIZE,
+                    ),
+                );
+                $this->sendMessage($error, self::CLIENT_ID);
+                $this->buffer = '';
+                continue;
+            }
+
             $this->processBuffer();
         }
 
@@ -66,15 +107,52 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
 
     public function sendMessage(Message $message, string $sessionId, array $context = []): PromiseInterface
     {
-        $json = \json_encode($message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         $deferred = new Deferred();
 
         try {
+            $json = \json_encode(
+                $message,
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
+            );
+
+            $this->logger->debug('Sending message', [
+                'type' => $message::class,
+                'size' => \strlen($json),
+            ]);
+
             \fwrite($this->output, $json . "\n");
-            return $deferred->promise();
+            \fflush($this->output); // Ensure message is sent immediately
+
+            $deferred->resolve();
+        } catch (\JsonException $e) {
+            $this->logger->error('JSON encoding failed', [
+                'error' => $e->getMessage(),
+                'message_type' => $message::class,
+            ]);
+
+            // Attempt to send error response
+            try {
+                $error = Error::forInternalError(
+                    "Failed to encode message: " . $e->getMessage(),
+                );
+                $errorJson = \json_encode($error, JSON_THROW_ON_ERROR);
+                \fwrite($this->output, $errorJson . "\n");
+                \fflush($this->output);
+            } catch (\Throwable $errorException) {
+                $this->logger->critical('Unable to send error response', [
+                    'exception' => $errorException->getMessage(),
+                ]);
+            }
+
+            $deferred->reject($e);
         } catch (\Throwable $e) {
-            return $deferred->promise();
+            $this->logger->error('Failed to send message', [
+                'exception' => $e->getMessage(),
+            ]);
+            $deferred->reject($e);
         }
+
+        return $deferred->promise();
     }
 
     public function close(): void
@@ -86,6 +164,7 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         if (\is_resource($this->output)) {
             \fclose($this->output);
         }
+
         $this->removeAllListeners();
     }
 
@@ -95,7 +174,7 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
     private function processBuffer(): void
     {
         while (\str_contains($this->buffer, "\n")) {
-            $pos = (int)\strpos($this->buffer, "\n");
+            $pos = (int) \strpos($this->buffer, "\n");
             $line = \substr($this->buffer, 0, $pos);
             $this->buffer = \substr($this->buffer, $pos + 1);
 
@@ -104,16 +183,24 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
                 continue;
             }
 
+            $this->logger->debug('Processing message', [
+                'size' => \strlen($trimmedLine),
+            ]);
+
             try {
                 $message = Parser::parse($trimmedLine);
+                $this->emit('message', [$message, self::CLIENT_ID]);
             } catch (\Throwable $e) {
-                $this->logger->error('Error parsing message', ['exception' => $e]);
-                $error = Error::forParseError("Invalid JSON: " . $e->getMessage());
-                $this->sendMessage($error, 'stdio');
-                continue;
-            }
+                $this->logger->error('Error parsing message', [
+                    'exception' => $e->getMessage(),
+                    'message_preview' => \substr($trimmedLine, 0, 100) . '...',
+                ]);
 
-            $this->emit('message', [$message, 'stdio']);
+                $error = Error::forParseError(
+                    "Invalid JSON: " . $e->getMessage(),
+                );
+                $this->sendMessage($error, self::CLIENT_ID);
+            }
         }
     }
 }
