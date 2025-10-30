@@ -63,7 +63,10 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         $this->emit('ready');
         $this->emit('client_connected', [self::CLIENT_ID]);
 
-        while (!\feof($this->input)) {
+        // Explicitly set blocking mode to prevent premature EOF
+        \stream_set_blocking($this->input, true);
+
+        while (!\feof($this->input) && !$this->closing) {
             // Read in chunks to handle large messages
             // This solves the macOS 8KB fgets() limitation
             $chunk = \fread($this->input, self::READ_CHUNK_SIZE);
@@ -123,7 +126,7 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
             \fwrite($this->output, $json . "\n");
             \fflush($this->output); // Ensure message is sent immediately
 
-            $deferred->resolve();
+            $deferred->resolve(null);
         } catch (\JsonException $e) {
             $this->logger->error('JSON encoding failed', [
                 'error' => $e->getMessage(),
