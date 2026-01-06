@@ -63,7 +63,26 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         $this->emit('ready');
         $this->emit('client_connected', [self::CLIENT_ID]);
 
-        while (!\feof($this->input)) {
+        while (!\feof($this->input) && !$this->closing) {
+            // Wait for data with stream_select to avoid blocking fread() timeout
+            $read = [$this->input];
+            $write = null;
+            $except = null;
+
+            // Short timeout (1 sec) to check $this->closing flag periodically
+            $result = @\stream_select($read, $write, $except, 1);
+
+            if ($result === false) {
+                $this->logger->error('stream_select() failed');
+                break;
+            }
+
+            if ($result === 0) {
+                // Timeout - no data available, check closing flag and continue
+                continue;
+            }
+
+            // Data is available, safe to read
             // Read in chunks to handle large messages
             // This solves the macOS 8KB fgets() limitation
             $chunk = \fread($this->input, self::READ_CHUNK_SIZE);
@@ -123,7 +142,7 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
             \fwrite($this->output, $json . "\n");
             \fflush($this->output); // Ensure message is sent immediately
 
-            $deferred->resolve();
+            $deferred->resolve(null);
         } catch (\JsonException $e) {
             $this->logger->error('JSON encoding failed', [
                 'error' => $e->getMessage(),
