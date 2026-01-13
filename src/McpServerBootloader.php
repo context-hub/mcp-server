@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Butschster\ContextGenerator\McpServer;
 
 use Butschster\ContextGenerator\Application\Bootloader\ConsoleBootloader;
+use Butschster\ContextGenerator\McpServer\Interceptor\McpServerInterceptorBootloader;
 use Butschster\ContextGenerator\McpServer\McpConfig\McpConfigBootloader;
 use Butschster\ContextGenerator\McpServer\Projects\McpProjectsBootloader;
 use Butschster\ContextGenerator\McpServer\Prompt\McpPromptBootloader;
@@ -24,6 +25,7 @@ final class McpServerBootloader extends Bootloader
     public function defineDependencies(): array
     {
         return [
+            McpServerInterceptorBootloader::class,
             McpToolBootloader::class,
             McpPromptBootloader::class,
             McpProjectsBootloader::class,
