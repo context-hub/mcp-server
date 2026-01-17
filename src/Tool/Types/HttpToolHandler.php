@@ -111,8 +111,9 @@ final readonly class HttpToolHandler extends AbstractToolHandler
         array $requestConfig,
         array $arguments,
     ): HttpToolRequest {
-        // Create arguments provider
+        // Create arguments provider and validate blocked arguments
         $argsProvider = new ToolArgumentsProvider($arguments, $tool->schema);
+        $argsProvider->validateArguments();
 
         // Create a processor for variable replacement
         $variables = $this->variables->with(new VariableReplacementProcessor($argsProvider));

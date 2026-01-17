@@ -6,21 +6,25 @@ namespace Butschster\ContextGenerator\McpServer\Tool\Provider;
 
 use Butschster\ContextGenerator\Lib\Variable\Provider\VariableProviderInterface;
 use Butschster\ContextGenerator\McpServer\Tool\Config\ToolSchema;
+use Butschster\ContextGenerator\McpServer\Tool\Exception\BlockedArgumentException;
 
 /**
  * Provider for tool arguments passed during execution.
- * Supports type casting based on schema definition.
+ * Supports type casting based on schema definition and flexible argument unpacking.
  */
-final readonly class ToolArgumentsProvider implements VariableProviderInterface
+final class ToolArgumentsProvider implements VariableProviderInterface
 {
+    /** @var array<string, mixed>|null */
+    private ?array $mergedArguments = null;
+
     public function __construct(
-        private array $arguments,
-        private ToolSchema $schema,
+        private readonly array $arguments,
+        private readonly ?ToolSchema $schema = null,
     ) {}
 
     public function has(string $name): bool
     {
-        return \array_key_exists($name, $this->arguments);
+        return \array_key_exists($name, $this->getMergedArguments());
     }
 
     /**
@@ -29,21 +33,55 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
      */
     public function get(string $name): ?string
     {
-        // If the argument is not provided, check if there's a default value in the schema
+        $merged = $this->getMergedArguments();
+
+        if ($this->schema === null) {
+            return isset($merged[$name]) ? (string) $merged[$name] : null;
+        }
+
         return $this->castValueFromSchema(
             $name,
-            $this->arguments[$name] ?? $this->schema->getDefaultValue($name),
+            $merged[$name] ?? $this->schema->getDefaultValue($name),
         );
     }
 
     /**
-     * Get all arguments
+     * Validate all arguments against schema rules.
+     * Checks for blocked arguments and throws exception if any are found.
+     *
+     * @throws BlockedArgumentException If a blocked argument is used
+     */
+    public function validateArguments(): void
+    {
+        if ($this->schema === null) {
+            return;
+        }
+
+        $blockedProperties = $this->schema->getBlockedProperties();
+        if (empty($blockedProperties)) {
+            return;
+        }
+
+        foreach (\array_keys($this->getMergedArguments()) as $name) {
+            if ($this->schema->isPropertyBlocked($name)) {
+                throw new BlockedArgumentException($name, $blockedProperties);
+            }
+        }
+    }
+
+    /**
+     * Get all arguments.
      *
      * @return array<string, mixed>
      */
     public function getAll(): array
     {
-        // Start with all explicitly provided arguments
+        $merged = $this->getMergedArguments();
+
+        if ($this->schema === null) {
+            return $merged;
+        }
+
         $result = [];
         $properties = $this->schema->getProperties();
 
@@ -54,32 +92,120 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
             }
         }
 
-        // Then add explicitly provided arguments (these will override defaults)
-        foreach ($this->arguments as $name => $value) {
-            // Apply type casting to the arguments
-            $result[$name] = $this->castValueFromSchema($name, $value);
+        // Then add explicitly provided arguments
+        foreach ($merged as $name => $value) {
+            $isFlexibleArg = $this->schema->getFlexibleArg() === $name;
+            if ($this->schema->allowsAnyProperties() || $this->schema->hasFlexibleArg() || isset($properties[$name])) {
+                // Skip the flexible arg container itself
+                if (!$isFlexibleArg) {
+                    $result[$name] = $this->castValueFromSchema($name, $value);
+                }
+            }
         }
 
         return $result;
     }
 
     /**
-     * Cast a value based on schema type definition
+     * Get merged arguments with lazy initialization.
+     *
+     * @return array<string, mixed>
+     */
+    private function getMergedArguments(): array
+    {
+        if ($this->mergedArguments === null) {
+            $this->mergedArguments = $this->buildMergedArguments();
+        }
+
+        return $this->mergedArguments;
+    }
+
+    /**
+     * Build merged arguments by unpacking flexible arg if present.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildMergedArguments(): array
+    {
+        if ($this->schema === null || !$this->schema->hasFlexibleArg()) {
+            return $this->arguments;
+        }
+
+        $flexibleArgName = $this->schema->getFlexibleArg();
+        if (!isset($this->arguments[$flexibleArgName])) {
+            return $this->arguments;
+        }
+
+        $flexibleValue = $this->arguments[$flexibleArgName];
+
+        // Try to parse/extract from the flexible arg
+        $unpacked = $this->parseFlexibleArg($flexibleValue);
+        if ($unpacked === null) {
+            return $this->arguments;
+        }
+
+        // Merge: unpacked arguments first, then explicit arguments override
+        return \array_merge($unpacked, $this->arguments);
+    }
+
+    /**
+     * Parse the flexible argument value as JSON or return array directly.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function parseFlexibleArg(mixed $value): ?array
+    {
+        // If already an array (MCP client may parse JSON automatically)
+        if (\is_array($value)) {
+            return $value;
+        }
+
+        if (!\is_string($value)) {
+            return null;
+        }
+
+        $trimmed = \trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        // Must start with { or [
+        if ($trimmed[0] !== '{' && $trimmed[0] !== '[') {
+            return null;
+        }
+
+        $decoded = \json_decode($trimmed, true);
+        if (\json_last_error() !== JSON_ERROR_NONE || !\is_array($decoded)) {
+            return null;
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Cast a value based on schema type definition.
      *
      * @param string $name The argument name
      * @param mixed $value The value to cast
-     * @return mixed The cast value
+     * @return string The cast value
      */
     private function castValueFromSchema(string $name, mixed $value): string
     {
-        // Return null directly if value is null
         if ($value === null) {
             return 'null';
         }
 
+        if ($this->schema === null) {
+            return (string) $value;
+        }
+
         $properties = $this->schema->getProperties();
         if (!isset($properties[$name])) {
-            return $value;
+            // For unpacked flexible args without schema definition
+            if (\is_array($value)) {
+                return \json_encode($value);
+            }
+            return (string) $value;
         }
 
         $propertyDef = $properties[$name];
@@ -100,9 +226,6 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         };
     }
 
-    /**
-     * Cast a value to string
-     */
     private function castToString(mixed $value): string
     {
         if (\is_array($value) || \is_object($value)) {
@@ -112,9 +235,6 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         return (string) $value;
     }
 
-    /**
-     * Cast a value to integer
-     */
     private function castToInt(mixed $value): string
     {
         if (\is_string($value) && \trim($value) === '') {
@@ -124,9 +244,6 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         return (string) $value;
     }
 
-    /**
-     * Cast a value to float
-     */
     private function castToFloat(mixed $value): string
     {
         if (\is_string($value) && \trim($value) === '') {
@@ -136,9 +253,6 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         return \number_format((float) $value, 2, '.', '');
     }
 
-    /**
-     * Cast a value to boolean
-     */
     private function castToBool(mixed $value): string
     {
         if (\is_string($value)) {
@@ -149,19 +263,14 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         return $value ? 'true' : 'false';
     }
 
-    /**
-     * Cast a value to array
-     */
     private function castToArray(mixed $value): array
     {
         if (\is_string($value)) {
-            // Try to parse JSON string
             $decoded = \json_decode($value, true);
             if (\json_last_error() === JSON_ERROR_NONE && \is_array($decoded)) {
                 return $decoded;
             }
 
-            // Split by comma if not a valid JSON
             return \array_map('trim', \explode(',', $value));
         }
 
@@ -176,19 +285,14 @@ final readonly class ToolArgumentsProvider implements VariableProviderInterface
         return $value;
     }
 
-    /**
-     * Cast a value to object (associative array)
-     */
     private function castToObject(mixed $value): array
     {
         if (\is_string($value)) {
-            // Try to parse JSON string
             $decoded = \json_decode($value, true);
             if (\json_last_error() === JSON_ERROR_NONE && \is_array($decoded)) {
                 return $decoded;
             }
 
-            // Can't convert simple string to object
             return [];
         }
 

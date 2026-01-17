@@ -131,8 +131,9 @@ final readonly class RunToolHandler extends AbstractToolHandler
         ToolCommand $command,
         array $arguments,
     ): ToolCommand {
-        // Create arguments provider
+        // Create arguments provider and validate blocked arguments
         $argsProvider = new ToolArgumentsProvider($arguments, $tool->schema);
+        $argsProvider->validateArguments();
 
         // Create a processor for variable replacement
         $processor = new VariableReplacementProcessor($argsProvider);
