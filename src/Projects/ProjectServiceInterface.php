@@ -59,4 +59,25 @@ interface ProjectServiceInterface
      * Resolve a path or alias to the actual project path
      */
     public function resolvePathOrAlias(string $pathOrAlias): string;
+
+    /**
+     * Check if a project exists by path or alias
+     */
+    public function hasProject(string $pathOrAlias): bool;
+
+    /**
+     * Remove a specific alias without affecting the project itself
+     *
+     * @return bool True if the alias existed and was removed, false otherwise
+     */
+    public function removeAlias(string $alias): bool;
+
+    /**
+     * Remove a project by its path, including all associated aliases
+     *
+     * If the removed project is the current project, the current project will be cleared.
+     *
+     * @return bool True if the project existed and was removed, false otherwise
+     */
+    public function removeProject(string $projectPath): bool;
 }

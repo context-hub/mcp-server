@@ -234,6 +234,138 @@ final class ProjectServiceTest extends TestCase
         $this->assertSame('.env.updated', $projectInfo->envFile);
     }
 
+    #[Test]
+    public function it_returns_true_when_project_exists_by_path(): void
+    {
+        $projectPath = '/path/to/project';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+
+        $this->assertTrue($this->service->hasProject($projectPath));
+    }
+
+    #[Test]
+    public function it_returns_true_when_project_exists_by_alias(): void
+    {
+        $projectPath = '/path/to/project';
+        $alias = 'my-project';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+        $this->state->aliases[$alias] = $projectPath;
+
+        $this->assertTrue($this->service->hasProject($alias));
+    }
+
+    #[Test]
+    public function it_returns_false_when_project_does_not_exist(): void
+    {
+        $this->assertFalse($this->service->hasProject('/non/existent/path'));
+        $this->assertFalse($this->service->hasProject('non-existent-alias'));
+    }
+
+    #[Test]
+    public function it_can_remove_alias(): void
+    {
+        $projectPath = '/path/to/project';
+        $alias = 'my-project';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+        $this->state->aliases[$alias] = $projectPath;
+
+        $this->repository->expects($this->once())->method('save');
+
+        $result = $this->service->removeAlias($alias);
+
+        $this->assertTrue($result);
+        $this->assertArrayNotHasKey($alias, $this->state->aliases);
+        // Project should still exist
+        $this->assertArrayHasKey($projectPath, $this->state->projects);
+    }
+
+    #[Test]
+    public function it_returns_false_when_removing_nonexistent_alias(): void
+    {
+        $result = $this->service->removeAlias('non-existent-alias');
+
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function it_can_remove_project(): void
+    {
+        $projectPath = '/path/to/project';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+
+        $this->repository->expects($this->once())->method('save');
+
+        $result = $this->service->removeProject($projectPath);
+
+        $this->assertTrue($result);
+        $this->assertArrayNotHasKey($projectPath, $this->state->projects);
+    }
+
+    #[Test]
+    public function it_removes_aliases_when_removing_project(): void
+    {
+        $projectPath = '/path/to/project';
+        $alias1 = 'alias1';
+        $alias2 = 'alias2';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+        $this->state->aliases[$alias1] = $projectPath;
+        $this->state->aliases[$alias2] = $projectPath;
+        $this->state->aliases['other-alias'] = '/other/path';
+
+        $result = $this->service->removeProject($projectPath);
+
+        $this->assertTrue($result);
+        $this->assertArrayNotHasKey($alias1, $this->state->aliases);
+        $this->assertArrayNotHasKey($alias2, $this->state->aliases);
+        // Other alias should remain
+        $this->assertArrayHasKey('other-alias', $this->state->aliases);
+    }
+
+    #[Test]
+    public function it_clears_current_project_when_removing_active_project(): void
+    {
+        $projectPath = '/path/to/project';
+
+        $this->state->projects[$projectPath] = new ProjectDTO(
+            path: $projectPath,
+            addedAt: \date('Y-m-d H:i:s'),
+        );
+        $this->state->currentProject = new CurrentProjectDTO(path: $projectPath);
+
+        $result = $this->service->removeProject($projectPath);
+
+        $this->assertTrue($result);
+        $this->assertNull($this->state->currentProject);
+    }
+
+    #[Test]
+    public function it_returns_false_when_removing_nonexistent_project(): void
+    {
+        $result = $this->service->removeProject('/non/existent/path');
+
+        $this->assertFalse($result);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

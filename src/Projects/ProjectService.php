@@ -167,6 +167,56 @@ final class ProjectService implements ProjectServiceInterface
         return $this->getState()->resolvePathOrAlias($pathOrAlias);
     }
 
+    public function hasProject(string $pathOrAlias): bool
+    {
+        $state = $this->getState();
+        $resolvedPath = $state->resolvePathOrAlias($pathOrAlias);
+
+        return isset($state->projects[$resolvedPath]);
+    }
+
+    public function removeAlias(string $alias): bool
+    {
+        $state = $this->getState();
+
+        if (!isset($state->aliases[$alias])) {
+            return false;
+        }
+
+        unset($state->aliases[$alias]);
+        $this->saveState($state);
+
+        return true;
+    }
+
+    public function removeProject(string $projectPath): bool
+    {
+        $state = $this->getState();
+
+        if (!isset($state->projects[$projectPath])) {
+            return false;
+        }
+
+        // Remove the project
+        unset($state->projects[$projectPath]);
+
+        // Remove all aliases pointing to this project
+        foreach ($state->aliases as $alias => $path) {
+            if ($path === $projectPath) {
+                unset($state->aliases[$alias]);
+            }
+        }
+
+        // Clear current project if it matches the removed project
+        if ($state->currentProject?->path === $projectPath) {
+            $state->currentProject = null;
+        }
+
+        $this->saveState($state);
+
+        return true;
+    }
+
     /**
      * Get the current project state, loading from storage if necessary
      */
