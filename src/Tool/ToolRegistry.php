@@ -43,6 +43,21 @@ final class ToolRegistry implements RegistryInterface, ToolProviderInterface, To
         return isset($this->tools[$id]);
     }
 
+    public function remove(string $id): bool
+    {
+        if (!$this->has($id)) {
+            return false;
+        }
+
+        unset($this->tools[$id]);
+        return true;
+    }
+
+    public function clear(): void
+    {
+        $this->tools = [];
+    }
+
     public function all(): array
     {
         return $this->getItems();
