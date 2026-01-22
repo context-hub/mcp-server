@@ -7,6 +7,7 @@ namespace Butschster\ContextGenerator\McpServer\Tool;
 use Butschster\ContextGenerator\Config\ConfigLoaderBootloader;
 use Butschster\ContextGenerator\Application\Bootloader\ConsoleBootloader;
 use Butschster\ContextGenerator\McpServer\Tool\Command\CommandExecutorInterface;
+use Butschster\ContextGenerator\McpServer\Tool\Types\RagToolHandler;
 use Butschster\ContextGenerator\McpServer\Tool\Types\RunToolHandler;
 use Butschster\ContextGenerator\McpServer\Tool\Types\ToolHandlerInterface;
 use Spiral\Boot\Bootloader\Bootloader;
@@ -33,6 +34,7 @@ final class McpToolBootloader extends Bootloader
                 => $factory->make(RunToolHandler::class, [
                 'executionEnabled' => (bool)($env->get('MCP_TOOL_COMMAND_EXECUTION') ?? true),
             ]),
+            RagToolHandler::class => RagToolHandler::class,
         ];
     }
 

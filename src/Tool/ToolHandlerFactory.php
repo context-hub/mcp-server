@@ -6,6 +6,7 @@ namespace Butschster\ContextGenerator\McpServer\Tool;
 
 use Butschster\ContextGenerator\McpServer\Tool\Config\ToolDefinition;
 use Butschster\ContextGenerator\McpServer\Tool\Types\HttpToolHandler;
+use Butschster\ContextGenerator\McpServer\Tool\Types\RagToolHandler;
 use Butschster\ContextGenerator\McpServer\Tool\Types\RunToolHandler;
 use Butschster\ContextGenerator\McpServer\Tool\Types\ToolHandlerInterface;
 use Psr\Container\ContainerInterface;
@@ -25,6 +26,7 @@ final readonly class ToolHandlerFactory
         private array $handlers = [
             'run' => RunToolHandler::class,
             'http' => HttpToolHandler::class,
+            'rag' => RagToolHandler::class,
         ],
     ) {}
 

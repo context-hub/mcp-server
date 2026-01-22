@@ -93,4 +93,22 @@ final readonly class McpItemsRegistry
             $this->register($className);
         }
     }
+
+    /**
+     * Register a dynamic tool with schema and handler.
+     *
+     * This allows registering tools that don't use class attributes,
+     * useful for dynamically configured tools.
+     *
+     * @param \PhpMcp\Schema\Tool $schema Tool schema
+     */
+    public function registerDynamicTool(\PhpMcp\Schema\Tool $schema): void
+    {
+        $this->registry->registerTool($schema, new NullHandler());
+
+        $this->logger->info('Registered dynamic tool', [
+            'name' => $schema->name,
+            'description' => $schema->description,
+        ]);
+    }
 }
