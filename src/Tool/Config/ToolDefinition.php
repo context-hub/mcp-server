@@ -50,7 +50,7 @@ final readonly class ToolDefinition implements \JsonSerializable
 
         // Extract any extra configuration data (type-specific)
         $extra = [];
-        $reservedKeys = ['id', 'description', 'type', 'commands', 'schema', 'env', 'workingDir'];
+        $reservedKeys = ['id', 'description', 'type', 'commands', 'schema', 'env', 'workingDir', 'requests', 'collection', 'operations'];
         foreach ($config as $key => $value) {
             if (!\in_array($key, $reservedKeys, true)) {
                 $extra[$key] = $value;
@@ -89,6 +89,37 @@ final readonly class ToolDefinition implements \JsonSerializable
         if ($type === 'http') {
             if (!isset($config['requests']) || !\is_array($config['requests']) || empty($config['requests'])) {
                 throw new \InvalidArgumentException('HTTP tool must have a non-empty requests array');
+            }
+        }
+
+        // Handle 'rag' type specific validations
+        if ($type === 'rag') {
+            if (!isset($config['collection']) || !\is_string($config['collection']) || $config['collection'] === '') {
+                throw new \InvalidArgumentException('RAG tool must specify a collection');
+            }
+
+            // Store collection and operations in extra for downstream processing
+            $extra['collection'] = $config['collection'];
+            $extra['operations'] = $config['operations'] ?? ['search', 'store'];
+
+            // Validate operations if provided
+            if (isset($config['operations'])) {
+                if (!\is_array($config['operations'])) {
+                    throw new \InvalidArgumentException('RAG tool operations must be an array');
+                }
+
+                $validOps = ['search', 'store'];
+                foreach ($config['operations'] as $op) {
+                    if (!\in_array($op, $validOps, true)) {
+                        throw new \InvalidArgumentException(
+                            \sprintf('Invalid RAG operation "%s". Valid: %s', $op, \implode(', ', $validOps)),
+                        );
+                    }
+                }
+
+                if (empty($config['operations'])) {
+                    throw new \InvalidArgumentException('RAG tool must have at least one operation');
+                }
             }
         }
 
