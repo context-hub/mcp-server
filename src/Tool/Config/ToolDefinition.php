@@ -50,7 +50,18 @@ final readonly class ToolDefinition implements \JsonSerializable
 
         // Extract any extra configuration data (type-specific)
         $extra = [];
-        $reservedKeys = ['id', 'description', 'type', 'commands', 'schema', 'env', 'workingDir', 'requests', 'collection', 'operations'];
+        $reservedKeys = [
+            'id',
+            'description',
+            'type',
+            'commands',
+            'schema',
+            'env',
+            'workingDir',
+            'requests',
+            'collection',
+            'operations',
+        ];
         foreach ($config as $key => $value) {
             if (!\in_array($key, $reservedKeys, true)) {
                 $extra[$key] = $value;
@@ -90,6 +101,8 @@ final readonly class ToolDefinition implements \JsonSerializable
             if (!isset($config['requests']) || !\is_array($config['requests']) || empty($config['requests'])) {
                 throw new \InvalidArgumentException('HTTP tool must have a non-empty requests array');
             }
+
+            $extra['requests'] = $config['requests'];
         }
 
         // Handle 'rag' type specific validations

@@ -42,11 +42,6 @@ final readonly class HttpToolRequest implements \JsonSerializable
                 throw new \InvalidArgumentException('HTTP request "method" must be a string');
             }
             $method = \strtoupper($config['method']);
-
-            // Validate method
-            if (!\in_array($method, ['GET', 'POST'], true)) {
-                throw new \InvalidArgumentException("Invalid HTTP method: {$method}");
-            }
         }
 
         $headers = [];
