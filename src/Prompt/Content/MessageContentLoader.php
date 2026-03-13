@@ -22,16 +22,4 @@ abstract readonly class MessageContentLoader
      * @throws PromptParsingException If content loading fails
      */
     abstract public function loadContent(array $messageConfig): string;
-
-    /**
-     * Validates that the message configuration is valid for this loader.
-     *
-     * @throws PromptParsingException If the configuration is invalid
-     */
-    protected function validateMessageConfig(array $messageConfig): void
-    {
-        if (!isset($messageConfig['role']) || !\is_string($messageConfig['role'])) {
-            throw new PromptParsingException('Message must have a valid role');
-        }
-    }
 }

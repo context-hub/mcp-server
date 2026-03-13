@@ -30,8 +30,6 @@ final readonly class FileMessageContentLoader extends MessageContentLoader
 
     public function loadContent(array $messageConfig): string
     {
-        $this->validateMessageConfig($messageConfig);
-
         if (!isset($messageConfig['file']) || !\is_string($messageConfig['file'])) {
             throw new PromptParsingException('Message must have a valid file property');
         }

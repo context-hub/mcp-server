@@ -18,8 +18,6 @@ final readonly class TextMessageContentLoader extends MessageContentLoader
 
     public function loadContent(array $messageConfig): string
     {
-        $this->validateMessageConfig($messageConfig);
-
         if (!isset($messageConfig['content']) || !\is_string($messageConfig['content'])) {
             throw new PromptParsingException('Message must have a valid content property');
         }
