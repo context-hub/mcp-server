@@ -255,17 +255,7 @@ final readonly class PromptConfigFactory
      */
     private function parseMessage(array $messageConfig, int $index): PromptMessage
     {
-        if (!isset($messageConfig['role']) || !\is_string($messageConfig['role'])) {
-            throw new PromptParsingException('Message must have a valid role');
-        }
-
-        try {
-            $role = Role::from($messageConfig['role']);
-        } catch (\ValueError) {
-            throw new PromptParsingException(
-                \sprintf('Invalid role "%s"', $messageConfig['role']),
-            );
-        }
+        $role = $this->parseRole($messageConfig);
 
         // Find appropriate content loader
         $contentLoader = $this->findContentLoader($messageConfig);
@@ -283,6 +273,28 @@ final readonly class PromptConfigFactory
             role: $role,
             content: new TextContent(text: $content),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $messageConfig The message configuration.
+     * @return Role The parsed role, defaults to `Role::User` if not specified.
+     *
+     * @throws PromptParsingException If the message configuration is invalid.
+     */
+    private function parseRole(array $messageConfig): Role
+    {
+        if (!isset($messageConfig['role'])) {
+            return Role::User;
+        }
+
+        if (!\is_string($messageConfig['role'])) {
+            throw new PromptParsingException('Message must have a valid role');
+        }
+
+        return Role::tryFrom($messageConfig['role'])
+            ?? throw new PromptParsingException(
+                \sprintf('Invalid role "%s"', $messageConfig['role']),
+            );
     }
 
     /**
