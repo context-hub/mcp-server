@@ -6,6 +6,9 @@ namespace Butschster\ContextGenerator\McpServer;
 
 use Butschster\ContextGenerator\McpServer\Registry\McpItemsRegistry;
 use Butschster\ContextGenerator\McpServer\Routing\RouteRegistrar;
+use Butschster\ContextGenerator\McpServer\Transport\StdioTransport;
+use Butschster\ContextGenerator\McpServer\Watcher\ConfigWatcherConfig;
+use Butschster\ContextGenerator\McpServer\Watcher\ConfigWatcherInterface;
 use Mcp\Server\Contracts\ServerTransportInterface;
 use Mcp\Server\Server;
 use Spiral\Core\Attribute\Proxy;
@@ -65,6 +68,8 @@ final class ServerRunner implements ServerRunnerInterface
                 ExceptionReporterInterface $reporter,
                 Server $server,
                 ServerTransportInterface $transport,
+                ConfigWatcherInterface $configWatcher,
+                ?ConfigWatcherConfig $watcherConfig,
             ) use ($name): void {
                 // Register all classes with MCP item attributes. Should be before registering controllers!
                 $registry->registerMany($this->actions);
@@ -77,10 +82,26 @@ final class ServerRunner implements ServerRunnerInterface
                 // Register all controllers for routing
                 $registrar->registerControllers($this->actions);
 
+                // Initialize config watcher with paths (if config provided)
+                if ($watcherConfig !== null) {
+                    $configWatcher->start(
+                        mainConfigPath: $watcherConfig->mainConfigPath,
+                        importPaths: $watcherConfig->importPaths,
+                    );
+
+                    // Inject watcher into transport (if StdioTransport)
+                    if ($transport instanceof StdioTransport) {
+                        $transport->setConfigWatcher($configWatcher);
+                    }
+                }
+
                 try {
                     $server->listen($transport);
                 } catch (\Throwable $e) {
                     $reporter->report($e);
+                } finally {
+                    // Ensure watcher is stopped on exit
+                    $configWatcher->stop();
                 }
             },
         );

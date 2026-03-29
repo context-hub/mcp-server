@@ -51,6 +51,21 @@ final class PromptRegistry implements RegistryInterface, PromptProviderInterface
         return isset($this->prompts[$name]);
     }
 
+    public function remove(string $id): bool
+    {
+        if (!$this->has($id)) {
+            return false;
+        }
+
+        unset($this->prompts[$id]);
+        return true;
+    }
+
+    public function clear(): void
+    {
+        $this->prompts = [];
+    }
+
     public function all(): array
     {
         return $this->prompts;

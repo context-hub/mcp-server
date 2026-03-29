@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer\Transport;
 
+use Butschster\ContextGenerator\McpServer\Watcher\ConfigWatcherInterface;
 use Evenement\EventEmitter;
 use Mcp\Server\Contracts\ServerTransportInterface;
 use Mcp\Server\Exception\TransportException;
@@ -35,6 +36,8 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
     protected bool $closing = false;
     protected bool $listening = false;
 
+    private ?ConfigWatcherInterface $configWatcher = null;
+
     /**
      * @param resource $input
      * @param resource $output
@@ -44,6 +47,14 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         private $output = \STDOUT,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {}
+
+    /**
+     * Set the config watcher for hot-reload support.
+     */
+    public function setConfigWatcher(ConfigWatcherInterface $watcher): void
+    {
+        $this->configWatcher = $watcher;
+    }
 
     public function listen(): void
     {
@@ -78,7 +89,9 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
             }
 
             if ($result === 0) {
-                // Timeout - no data available, check closing flag and continue
+                // Timeout - no data available
+                // Perfect time to check for config changes!
+                $this->tickConfigWatcher();
                 continue;
             }
 
@@ -176,6 +189,12 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
 
     public function close(): void
     {
+        // Stop config watcher on transport close
+        if ($this->configWatcher !== null) {
+            $this->configWatcher->stop();
+            $this->configWatcher = null;
+        }
+
         if (\is_resource($this->input)) {
             \fclose($this->input);
         }
@@ -185,6 +204,24 @@ final class StdioTransport extends EventEmitter implements ServerTransportInterf
         }
 
         $this->removeAllListeners();
+    }
+
+    /**
+     * Non-blocking config watcher tick.
+     */
+    private function tickConfigWatcher(): void
+    {
+        if ($this->configWatcher === null) {
+            return;
+        }
+
+        try {
+            $this->configWatcher->tick();
+        } catch (\Throwable $e) {
+            $this->logger->error('Config watcher error', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

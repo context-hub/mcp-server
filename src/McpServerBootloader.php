@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Butschster\ContextGenerator\McpServer;
 
-use Butschster\ContextGenerator\Application\Bootloader\ConsoleBootloader;
 use Butschster\ContextGenerator\McpServer\Interceptor\McpServerInterceptorBootloader;
 use Butschster\ContextGenerator\McpServer\McpConfig\McpConfigBootloader;
 use Butschster\ContextGenerator\McpServer\Projects\McpProjectsBootloader;
@@ -13,6 +12,7 @@ use Butschster\ContextGenerator\McpServer\Registry\McpItemsRegistry;
 use Butschster\ContextGenerator\McpServer\Routing\McpResponseStrategy;
 use Butschster\ContextGenerator\McpServer\Routing\RouteRegistrar;
 use Butschster\ContextGenerator\McpServer\Tool\McpToolBootloader;
+use Butschster\ContextGenerator\McpServer\Watcher\ConfigWatcherBootloader;
 use League\Route\Router;
 use League\Route\Strategy\StrategyInterface;
 use Psr\Container\ContainerInterface;
@@ -31,6 +31,7 @@ final class McpServerBootloader extends Bootloader
             McpProjectsBootloader::class,
             McpConfigBootloader::class,
             McpServerCoreBootloader::class,
+            ConfigWatcherBootloader::class,
         ];
     }
 
